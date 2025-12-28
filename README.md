@@ -202,7 +202,7 @@ frontend/
 ### Upload Process
 1. Seller creates product
 2. Uploads file via `/api/upload`
-3. File stored in `public/uploads/` with UUID filename
+3. File stored in `public/uploads/` with UUID filename (local), cloudinary on production
 4. File metadata saved to database
 
 ### Download Process
@@ -281,7 +281,7 @@ Access at: `http://localhost:4000/api/graphql`
 ### Frontend Deployment
 1. Update `NEXT_PUBLIC_BACKEND_URL` to production URL
 2. Build: `npm run build`
-3. Deploy to Vercel, Netlify, or self-hosted server
+3. Deploy to Vercel
 
 ### Database Deployment
 1. Set up production PostgreSQL

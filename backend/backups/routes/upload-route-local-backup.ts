@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { writeFile, mkdir, unlink } from "fs/promises";
+import { join } from "path";
+import { v4 as uuidv4 } from "uuid";
 import { ZodError } from "zod";
 import { hasuraClient } from "@/lib/hasura";
 import { addCorsHeaders } from "@/lib/cors";
 import { UploadFileSchema, validateFile } from "@/lib/validation";
-import { storage } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +13,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File;
     const productId = formData.get("productId") as string;
 
+    // Validate input with Zod
     try {
       UploadFileSchema.parse({ productId });
     } catch (error) {
@@ -28,6 +31,7 @@ export async function POST(request: NextRequest) {
       return addCorsHeaders(response, request.headers.get("origin"));
     }
 
+    // Validate file exists
     if (!file) {
       const response = NextResponse.json(
         { error: "File is required" },
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
       return addCorsHeaders(response, request.headers.get("origin"));
     }
 
+    // Validate file type and size
     try {
       validateFile(file);
     } catch (fileError) {
@@ -49,7 +54,8 @@ export async function POST(request: NextRequest) {
       return addCorsHeaders(response, request.headers.get("origin"));
     }
 
-    let oldFileKey: string | null = null;
+    // Get current product to delete old file
+    let oldFilePath: string | null = null;
     try {
       const productQuery = `
         query GetProductFile($id: uuid!) {
@@ -63,21 +69,46 @@ export async function POST(request: NextRequest) {
         products_by_pk: { file_url: string | null } | null;
       }>(productQuery, { id: productId });
 
-      oldFileKey = productResult.products_by_pk?.file_url || null;
+      if (productResult.products_by_pk?.file_url) {
+        const oldFileName = productResult.products_by_pk.file_url
+          .split("/")
+          .pop();
+        if (oldFileName) {
+          oldFilePath = join(process.cwd(), "public", "uploads", oldFileName);
+        }
+      }
     } catch (error) {
       console.warn("Could not fetch old file info:", error);
     }
 
-    const uploadResult = await storage.upload(file, `products/${productId}`);
+    // Ensure upload directory exists
+    const uploadDir = join(process.cwd(), "public", "uploads");
+    await mkdir(uploadDir, { recursive: true });
 
-    if (oldFileKey) {
+    // Generate unique filename
+    const fileExtension = file.name.split(".").pop() || "bin";
+    const fileName = `${uuidv4()}.${fileExtension}`;
+    const filePath = join(uploadDir, fileName);
+
+    // Save new file
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filePath, buffer);
+
+    // Delete old file if it exists
+    if (oldFilePath) {
       try {
-        await storage.delete(oldFileKey);
+        await unlink(oldFilePath);
+        console.log(`Deleted old file: ${oldFilePath}`);
       } catch (error) {
         console.warn("Could not delete old file:", error);
       }
     }
 
+    // File URL for access
+    const fileUrl = `/uploads/${fileName}`;
+
+    // Update product in Hasura
     const updateQuery = `
       mutation UpdateProductFile($id: uuid!, $file_url: String!, $file_name: String!, $file_size: Int!) {
         update_products_by_pk(
@@ -98,18 +129,18 @@ export async function POST(request: NextRequest) {
 
     await hasuraClient.execute(updateQuery, {
       id: productId,
-      file_url: uploadResult.url,
-      file_name: uploadResult.fileName,
-      file_size: uploadResult.fileSize,
+      file_url: fileUrl,
+      file_name: file.name,
+      file_size: file.size,
     });
 
+    // Return success response
     const response = NextResponse.json({
       success: true,
-      fileUrl: uploadResult.url,
-      fileKey: uploadResult.key,
-      fileName: uploadResult.fileName,
-      fileSize: uploadResult.fileSize,
-      provider: uploadResult.provider,
+      fileUrl,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
       productId,
     });
 
@@ -117,7 +148,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Upload error:", error);
     const response = NextResponse.json(
-      { error: error instanceof Error ? error.message : "Upload failed" },
+      { error: "Upload failed" },
       { status: 500 }
     );
     return addCorsHeaders(response, request.headers.get("origin"));
