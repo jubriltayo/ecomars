@@ -41,7 +41,7 @@ export function HeroSection() {
               variant="outline"
               className="btn-start-selling"
             >
-              <Link href="/sell">
+              <Link href="/dashboard/products">
                 Start Selling
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

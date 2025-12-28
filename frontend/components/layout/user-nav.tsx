@@ -11,12 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Package, Download, LogIn, UserPlus } from "lucide-react";
-import { useAuth } from "@/lib/contexts/auth-context";
+import { LogOut, Package, Download, LogIn, UserPlus, User } from "lucide-react";
+import { useAuthContext } from "@/lib/contexts/auth-context";
 import Link from "next/link";
 
 export function UserNav() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuthContext();
 
   if (isLoading) {
     return (
@@ -27,19 +27,20 @@ export function UserNav() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="ghost" asChild className="hover:bg-muted/50">
+        <Button variant="outline" size="sm" asChild className="hidden sm:flex">
           <Link href="/login" className="flex items-center gap-2">
             <LogIn className="h-4 w-4" />
-            Log In
+            <span className="hidden sm:inline">Log In</span>
           </Link>
         </Button>
         <Button
           asChild
+          size="sm"
           className="bg-linear-primary hover:opacity-90 text-white"
         >
           <Link href="/signup" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
-            Sign Up
+            <span className="hidden sm:inline">Sign Up</span>
           </Link>
         </Button>
       </div>
@@ -49,7 +50,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
           <Avatar className="h-9 w-9 border-2 border-primary/20">
             <AvatarImage src={user.image} alt={user.name} />
             <AvatarFallback className="bg-linear-primary text-white">
@@ -69,6 +70,12 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">
+              <User className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/dashboard/products">
               <Package className="mr-2 h-4 w-4" />

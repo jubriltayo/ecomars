@@ -55,16 +55,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       );
 
       if (existingItem) {
-        // Update quantity if item exists
-        return currentItems.map((item) =>
-          item.productId === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+        // For digital products, no increase in quantity
+        // Just return same cart
+        return currentItems;
       } else {
-        // Add new item
         const newItem: CartItem = {
-          id: Date.now().toString(), // Simple unique ID
+          id: Date.now().toString(),
           productId: product.id,
           title: product.title,
           price: product.price,
@@ -87,9 +83,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // For digital products, quantity should always be 1
+    const newQuantity = Math.max(1, quantity); // Ensure minimum 1
+
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item
+        item.productId === productId ? { ...item, quantity: newQuantity } : item
       )
     );
   };
@@ -98,7 +97,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = items.length;
   const totalPrice = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0

@@ -3,13 +3,13 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t glass backdrop-blur-sm">
+    <footer className="mt-auto border-t glass">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-primary rounded-lg">
+              <div className="p-2 bg-linear-primary rounded-lg">
                 <Rocket className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold text-gradient-primary">
@@ -21,7 +21,7 @@ export function SiteFooter() {
             </p>
           </div>
 
-          {/* Links */}
+          {/* Marketplace */}
           <div>
             <h3 className="text-sm font-semibold mb-4">Marketplace</h3>
             <ul className="space-y-2 text-sm">
@@ -30,54 +30,46 @@ export function SiteFooter() {
                   href="/products"
                   className="hover:text-primary transition-colors"
                 >
-                  Digital Products
+                  Browse Products
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/categories"
+                  href="/dashboard/products"
                   className="hover:text-primary transition-colors"
                 >
-                  Categories
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/trending"
-                  className="hover:text-primary transition-colors"
-                >
-                  Trending
+                  Sell Products
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* For Creators */}
+          {/* Account */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">For Creators</h3>
+            <h3 className="text-sm font-semibold mb-4">Account</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/sell"
+                  href="/dashboard"
                   className="hover:text-primary transition-colors"
                 >
-                  Sell on Ecomars
+                  Dashboard
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/pricing"
+                  href="/purchases"
                   className="hover:text-primary transition-colors"
                 >
-                  Pricing
+                  My Purchases
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/resources"
+                  href="/cart"
                   className="hover:text-primary transition-colors"
                 >
-                  Creator Resources
+                  Cart
                 </Link>
               </li>
             </ul>
@@ -88,27 +80,13 @@ export function SiteFooter() {
             <h3 className="text-sm font-semibold mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link
-                  href="/privacy"
-                  className="hover:text-primary transition-colors"
-                >
+                <Link href="#" className="hover:text-primary transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/terms"
-                  className="hover:text-primary transition-colors"
-                >
+                <Link href="#" className="hover:text-primary transition-colors">
                   Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/refund"
-                  className="hover:text-primary transition-colors"
-                >
-                  Refund Policy
                 </Link>
               </li>
             </ul>

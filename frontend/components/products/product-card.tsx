@@ -4,7 +4,7 @@ import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Edit, Trash2 } from "lucide-react";
+import { ShoppingBag, Edit, Trash2, Check } from "lucide-react";
 import { useCart } from "@/lib/contexts/cart-context";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -17,8 +17,8 @@ interface ProductCardProps {
     price: number;
     fileUrl?: string;
   };
-  showActions?: boolean; // New prop for dashboard view
-  onDelete?: (productId: string) => void; // New prop for delete callback
+  showActions?: boolean;
+  onDelete?: (productId: string) => void;
 }
 
 export function ProductCard({
@@ -26,12 +26,20 @@ export function ProductCard({
   showActions = false,
   onDelete,
 }: ProductCardProps) {
-  const { addToCart } = useCart();
+  const { items, addToCart } = useCart();
   const router = useRouter();
+
+  const isInCart = items.some((item) => item.productId === product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isInCart) {
+      toast.info("This product is already in your cart");
+      return;
+    }
+
     addToCart(product);
     toast.success("Added to cart!");
   };
@@ -105,8 +113,16 @@ export function ProductCard({
             <Button
               className="w-full bg-linear-primary text-white hover:opacity-90"
               onClick={handleAddToCart}
+              disabled={isInCart}
             >
-              Add to Cart
+              {isInCart ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Already in Cart
+                </>
+              ) : (
+                "Add to Cart"
+              )}
             </Button>
           )}
         </CardFooter>

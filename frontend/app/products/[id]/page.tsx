@@ -15,82 +15,24 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { graphqlRequest, productsQueries } from "@/lib/graphql/client";
+import { useProduct } from "@/lib/hooks/useProducts";
 import { toast } from "sonner";
 import { useCart } from "@/lib/contexts/cart-context";
-
-interface Product {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number;
-  fileUrl: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  sellerId: string;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { convertToProductCardDataSingle } from "@/lib/utils/product-utils";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Get cart context
+  const { product, isLoading, error } = useProduct(productId);
   const { addToCart } = useCart();
 
   useEffect(() => {
-    if (productId) {
-      fetchProduct();
-    }
-  }, [productId]);
-
-  const fetchProduct = async () => {
-    try {
-      setIsLoading(true);
-      const { data, errors } = await graphqlRequest<{
-        product: Product;
-      }>(productsQueries.getProduct, { id: productId });
-
-      if (errors) {
-        throw new Error(errors[0]?.message || "Product not found");
-      }
-
-      if (data?.product) {
-        setProduct(data.product);
-      } else {
-        // Fallback to mock data for portfolio demo
-        setProduct(getMockProduct(productId));
-      }
-    } catch (error: any) {
-      console.error("Error fetching product:", error);
+    if (error) {
       toast.error("Failed to load product details");
-      setProduct(getMockProduct(productId));
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  // Mock data fallback
-  const getMockProduct = (id: string): Product => ({
-    id,
-    title: "Digital Marketing Masterclass",
-    description:
-      "Complete guide to digital marketing strategies for 2024. This comprehensive course covers everything from SEO, social media marketing, email campaigns, to analytics and reporting. Perfect for beginners and experienced marketers alike.",
-    price: 49.99,
-    fileUrl: null,
-    fileName: "digital-marketing-masterclass.pdf",
-    fileSize: 25400000,
-    sellerId: "seller-1",
-    isPublished: true,
-    createdAt: "2024-01-15",
-    updatedAt: "2024-01-15",
-  });
+  }, [error]);
 
   const handleAddToCart = () => {
     if (!product) {
@@ -145,7 +87,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="text-center py-16 space-y-4">
         <h1 className="text-2xl font-bold">Product Not Found</h1>
@@ -187,12 +129,6 @@ export default function ProductDetailPage() {
               <Badge className="bg-linear-warm text-white text-lg px-4 py-1">
                 ${product.price.toFixed(2)}
               </Badge>
-              <div className="flex items-center text-muted-foreground">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                <span className="font-medium">4.8</span>
-                <span className="mx-1">·</span>
-                <span>42 reviews</span>
-              </div>
             </div>
           </div>
 

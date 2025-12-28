@@ -1,108 +1,22 @@
 "use client";
 
 import { useRequireAuth } from "@/lib/utils/auth-redirect";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Package, ShoppingBag } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import { graphqlRequest, productsQueries, Product } from "@/lib/graphql/client";
+import { DashboardDisplay } from "@/components/dashboard/dashboard-display";
+import { useMyProducts } from "@/lib/hooks/useProducts";
 
 export default function DashboardPage() {
-  const { user, isLoading } = useRequireAuth();
-  const [productCount, setProductCount] = useState(0);
+  const { user, isLoading: authLoading } = useRequireAuth();
+  const { products, isLoading: productsLoading } = useMyProducts();
 
-  useEffect(() => {
-    if (user) {
-      fetchProductCount();
-    }
-  }, [user]);
-
-  const fetchProductCount = async () => {
-    try {
-      const { data } = await graphqlRequest<{ myProducts: Product[] }>(
-        productsQueries.getMyProducts
-      );
-      setProductCount(data?.myProducts?.length || 0);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
-
-  if (isLoading || !user) {
+  if (authLoading || !user) {
     return null;
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold">Welcome back, {user.name}!</h1>
-        <p className="text-muted-foreground">
-          Manage your products and track sales
-        </p>
-      </div>
-
-      {/* Simple Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-linear-card border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Your Products</p>
-                <p className="text-3xl font-bold mt-1">{productCount}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-gradient-primary/10">
-                <Package className="h-8 w-8 text-gradient-primary" />
-              </div>
-            </div>
-            <Button variant="outline" className="w-full mt-4" asChild>
-              <Link href="/dashboard/products">Manage Products</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-linear-card border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Sales</p>
-                <p className="text-3xl font-bold mt-1">0</p>
-              </div>
-              <div className="p-3 rounded-lg bg-gradient-warm/10">
-                <ShoppingBag className="h-8 w-8 text-gradient-warm" />
-              </div>
-            </div>
-            <Button variant="outline" className="w-full mt-4" disabled>
-              View Sales
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="space-y-3">
-          <Button
-            asChild
-            className="w-full justify-start bg-linear-primary text-white hover:opacity-90"
-          >
-            <Link href="/dashboard/products/new">
-              <Package className="mr-2 h-4 w-4" />
-              Create New Product
-              <ArrowRight className="ml-auto h-4 w-4" />
-            </Link>
-          </Button>
-
-          <Button variant="outline" className="w-full justify-start" asChild>
-            <Link href="/products">
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Browse Marketplace
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </div>
+    <DashboardDisplay
+      userName={user.name}
+      productCount={productsLoading ? 0 : products.length}
+      totalSales={0}
+    />
   );
 }

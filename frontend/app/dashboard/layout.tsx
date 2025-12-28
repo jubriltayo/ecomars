@@ -23,7 +23,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      {/* Main App Header still shows at top */}
       <div className="flex">
         <DashboardSidebar />
         <main className="flex-1 p-6">{children}</main>

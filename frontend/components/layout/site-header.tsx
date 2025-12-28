@@ -4,11 +4,20 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { UserNav } from "@/components/layout/user-nav";
-import { ShoppingCart, Rocket } from "lucide-react";
+import { ShoppingCart, Rocket, Menu, X } from "lucide-react";
 import { useCart } from "@/lib/contexts/cart-context";
+import { useState } from "react";
 
 export function SiteHeader() {
   const { totalItems } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { label: "Marketplace", href: "/products" },
+    { label: "Sell", href: "/dashboard/products" },
+    { label: "Purchases", href: "/purchases" },
+    { label: "Dashboard", href: "/dashboard" },
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b glass">
@@ -20,49 +29,28 @@ export function SiteHeader() {
               <div className="p-2 bg-linear-primary rounded-lg">
                 <Rocket className="h-6 w-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-gradient-primary">
+              <span className="text-2xl font-bold text-gradient-primary hidden sm:inline-block">
                 Ecomars
               </span>
             </Link>
           </div>
 
-          {/* Navigation - Always show all menu items */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/products"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              Marketplace
-            </Link>
-
-            {/* Always show Sell - will redirect to login if not authenticated */}
-            <Link
-              href="/dashboard/products"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              Sell
-            </Link>
-
-            {/* Always show My Purchases - will redirect to login */}
-            <Link
-              href="/purchases"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              My Purchases
-            </Link>
-
-            {/* Always show Dashboard - will redirect to login */}
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              Dashboard
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            {/* Cart Icon with counter */}
+            {/* Cart Icon */}
             <Button
               variant="ghost"
               size="icon"
@@ -81,8 +69,40 @@ export function SiteHeader() {
 
             <ThemeToggle />
             <UserNav />
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t py-4">
+            <nav className="flex flex-col space-y-3">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

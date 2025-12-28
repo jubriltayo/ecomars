@@ -1,58 +1,33 @@
 "use client";
 
 import { useRequireAuth } from "@/lib/utils/auth-redirect";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import {
-  graphqlRequest,
-  productsQueries,
-  productsMutations,
-  Product,
-} from "@/lib/graphql/client";
+import { ProductEditor } from "@/components/products/product-editor";
+import { useProduct } from "@/lib/hooks/useProducts";
+import { useProductOperations } from "@/lib/hooks/useProductOperations";
 import { useRouter, useParams } from "next/navigation";
-import { ProductForm } from "@/components/products/product-form";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function EditProductPage() {
-  const { user, isLoading } = useRequireAuth();
+  const { user, isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isFetching, setIsFetching] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    product,
+    isLoading: isFetching,
+    error: fetchError,
+  } = useProduct(productId);
+  const { handleUpdateProduct, isUpdating } = useProductOperations(); // Fixed import
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (user && productId) {
-      fetchProduct();
-    }
-  }, [user, productId]);
-
-  const fetchProduct = async () => {
-    try {
-      setIsFetching(true);
-      const { data } = await graphqlRequest<{ product: Product }>(
-        productsQueries.getProduct,
-        { id: productId }
-      );
-
-      if (data?.product) {
-        setProduct(data.product);
-      } else {
-        toast.error("Product not found");
-        router.push("/dashboard/products");
-      }
-    } catch (error: any) {
-      console.error("Error fetching product:", error);
+    if (fetchError) {
       toast.error("Failed to load product");
       router.push("/dashboard/products");
-    } finally {
-      setIsFetching(false);
     }
-  };
+  }, [fetchError, router]);
 
   const handleSubmit = async (
     formData: { title: string; description: string; price: string },
@@ -61,74 +36,26 @@ export default function EditProductPage() {
     const price = parseFloat(formData.price);
 
     try {
-      setIsSubmitting(true);
-
-      // Prepare update data
-      const updateData: any = {
-        title: formData.title,
-        description: formData.description,
-        price: price,
-      };
-
-      // If new file is uploaded, handle it
-      if (file) {
-        // Upload new file (backend will delete old file)
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", file);
-        uploadFormData.append("productId", productId);
-
-        const uploadResponse = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"
-          }/api/upload`,
-          {
-            method: "POST",
-            credentials: "include",
-            body: uploadFormData,
-          }
-        );
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`Upload failed: ${errorText}`);
-        }
-
-        const uploadResult = await uploadResponse.json();
-
-        if (!uploadResult.success) {
-          throw new Error(uploadResult.error || "Upload failed");
-        }
-
-        // Add file info to update data
-        updateData.fileUrl = uploadResult.fileUrl;
-        updateData.fileName = uploadResult.fileName;
-        updateData.fileSize = uploadResult.fileSize;
-      }
-
-      // Update product in Hasura
-      const { data: updateDataResult, errors } = await graphqlRequest(
-        productsMutations.updateProduct,
+      setIsProcessing(true);
+      await handleUpdateProduct(
+        productId,
         {
-          id: productId,
-          input: updateData,
-        }
+          title: formData.title,
+          description: formData.description,
+          price: price,
+        },
+        file
       );
-
-      if (errors) {
-        throw new Error(errors[0]?.message || "Failed to update product");
-      }
-
-      toast.success("Product updated successfully!");
-      router.push(`/dashboard/products`);
-    } catch (error: any) {
-      console.error("Error updating product:", error);
-      toast.error(error.message || "Failed to update product");
+      router.push("/dashboard/products");
+    } catch (error) {
+      // Error handled by hook
+      throw error;
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
     }
   };
 
-  if (isLoading || isFetching || !user) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -139,40 +66,51 @@ export default function EditProductPage() {
     );
   }
 
-  if (!product) {
-    return null;
+  if (isFetching) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 mx-auto rounded-full bg-gradient-primary animate-pulse mb-4" />
+          <p className="text-muted-foreground">Loading product...</p>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <Button
-          variant="ghost"
-          asChild
-          className="pl-0 mb-4 hover:bg-transparent"
+  if (!product) {
+    return (
+      <div className="text-center py-16">
+        <h1 className="text-2xl font-bold">Product Not Found</h1>
+        <p className="text-muted-foreground mb-6">
+          The product you're trying to edit doesn't exist.
+        </p>
+        <button
+          onClick={() => router.push("/dashboard/products")}
+          className="px-4 py-2 rounded-lg bg-linear-primary text-white hover:opacity-90"
         >
-          <Link href="/dashboard/products" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Products
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">Edit Product</h1>
-        <p className="text-muted-foreground">Update your digital product</p>
+          Back to Products
+        </button>
       </div>
+    );
+  }
 
-      <ProductForm
-        initialData={{
-          id: product.id,
-          title: product.title,
-          description: product.description || "",
-          price: product.price,
-          fileName: product.fileName || undefined,
-          fileUrl: product.fileUrl || undefined,
-        }}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-    </div>
+  const isSubmitting = isUpdating || isProcessing;
+
+  return (
+    <ProductEditor
+      title="Edit Product"
+      description="Update your digital product"
+      backUrl="/dashboard/products"
+      initialData={{
+        id: product.id,
+        title: product.title,
+        description: product.description || "",
+        price: product.price,
+        fileName: product.fileName || undefined,
+        fileUrl: product.fileUrl || undefined,
+      }}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
   );
 }
