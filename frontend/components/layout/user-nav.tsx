@@ -20,7 +20,7 @@ export function UserNav() {
 
   if (isLoading) {
     return (
-      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-muted to-muted/70 animate-pulse" />
+      <div className="h-8 w-8 rounded-full bg-linear-to-r from-muted to-muted/70 animate-pulse" />
     );
   }
 
