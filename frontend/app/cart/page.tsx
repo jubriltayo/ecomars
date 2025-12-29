@@ -20,9 +20,7 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) {
-      // Redirect to login with return URL
-      const returnUrl = encodeURIComponent("/checkout");
-      router.push(`/login?returnUrl=${returnUrl}`);
+      router.push("/login");
       return;
     }
     router.push("/checkout");

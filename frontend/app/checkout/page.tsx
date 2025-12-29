@@ -8,7 +8,7 @@ import { Loading } from "@/components/ui/loading";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user, isLoading } = useRequireAuth("/login?returnUrl=/checkout");
+  const { user, isLoading } = useRequireAuth("/login");
 
   if (isLoading) {
     return <Loading message="Checking authentication..." fullScreen />;

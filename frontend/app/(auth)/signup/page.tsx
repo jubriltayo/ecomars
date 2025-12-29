@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthContext } from "@/lib/contexts/auth-context";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,6 @@ import { useAuthForm } from "@/lib/hooks/useAuthForm";
 
 export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl") || "/";
-
   const { register } = useAuthContext();
 
   const {
@@ -35,7 +32,7 @@ export default function SignupPage() {
     isLogin: false,
     onSubmit: async (data) => {
       await register(data.name!, data.email, data.password);
-      router.push(returnUrl);
+      router.push("/");
     },
   });
 
@@ -47,11 +44,7 @@ export default function SignupPage() {
         <AuthFooter
           text="Already have an account?"
           linkText="Sign in"
-          linkHref={`/login${
-            returnUrl !== "/"
-              ? `?returnUrl=${encodeURIComponent(returnUrl)}`
-              : ""
-          }`}
+          linkHref="/login"
         />
       }
     >

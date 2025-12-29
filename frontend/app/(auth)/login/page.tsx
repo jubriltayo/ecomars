@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthContext } from "@/lib/contexts/auth-context";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthForm } from "@/components/auth/auth-form";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
@@ -10,9 +10,6 @@ import { useAuthForm } from "@/lib/hooks/useAuthForm";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl") || "/";
-
   const { login } = useAuthContext();
 
   const {
@@ -28,7 +25,7 @@ export default function LoginPage() {
     isLogin: true,
     onSubmit: async (data) => {
       await login(data.email, data.password);
-      router.push(returnUrl);
+      router.push("/");
     },
   });
 
@@ -40,11 +37,7 @@ export default function LoginPage() {
         <AuthFooter
           text="Don't have an account?"
           linkText="Sign up"
-          linkHref={`/signup${
-            returnUrl !== "/"
-              ? `?returnUrl=${encodeURIComponent(returnUrl)}`
-              : ""
-          }`}
+          linkHref="/signup"
         />
       }
     >
