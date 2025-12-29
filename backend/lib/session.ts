@@ -75,15 +75,23 @@ export async function getSession(
 // Create session cookie string
 export function createSessionCookie(token: string): string {
   const domain = getCookieDomain();
+  const isLocalhost = domain === "localhost";
   const secure = isProduction() ? "; Secure" : "";
   const maxAge = 30 * 24 * 60 * 60; // 30 days
+  
+  // Don't set Domain for localhost
+  const domainAttr = isLocalhost ? "" : `; Domain=${domain}`;
 
-  return `session=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax; Domain=${domain}${secure}`;
+  return `session=${token}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${domainAttr}${secure}`;
 }
 
 // Clear session cookie string
 export function clearSessionCookie(): string {
   const domain = getCookieDomain();
+  const isLocalhost = domain === "localhost";
+  
+  // Don't set Domain for localhost
+  const domainAttr = isLocalhost ? "" : `; Domain=${domain}`;
 
-  return `session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Domain=${domain}`;
+  return `session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${domainAttr}`;
 }

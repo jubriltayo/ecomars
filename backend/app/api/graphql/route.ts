@@ -3,7 +3,7 @@ import { startServerAndCreateNextHandler } from "@as-integrations/next";
 import { NextRequest, NextResponse } from "next/server";
 import { typeDefs } from "@/graphql/schema";
 import { resolvers } from "@/graphql/resolvers";
-import { createCorsResponse, addCorsHeaders } from "@/lib/cors";
+import { createCorsResponse, getCorsHeaders } from "@/lib/cors";
 import { GraphQLContext } from "@/types/context";
 import { getSession } from "@/lib/session";
 import { handleAuthResponse, GraphQLAuthResponse } from "@/lib/auth-middleware";
@@ -42,24 +42,68 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const response = await handler(request);
-  return addCorsHeaders(response, request.headers.get("origin"));
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+
+  const headers = new Headers(response.headers);
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 export async function POST(request: NextRequest) {
   // Handle GraphQL request
   const response = await handler(request);
 
-  // Parse response to check for auth mutations
-  const responseData = (await response.json()) as GraphQLAuthResponse;
+  // Read response body (clone first to avoid consuming it)
+  const clonedResponse = response.clone();
+  const responseData = (await clonedResponse.json()) as GraphQLAuthResponse;
 
-  // Create new response with auth handling
-  const newResponse = NextResponse.json(responseData, {
-    status: response.status,
+  // Start with existing headers from Apollo response
+  const headers = new Headers(response.headers);
+
+  // Add CORS headers
+  const corsHeaders = getCorsHeaders(request.headers.get("origin"));
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
   });
 
-  // Handle auth cookies if needed
-  await handleAuthResponse(newResponse, responseData);
+  // Check if we need to set auth cookie
+  let cookieHeader: string | null = null;
 
-  // Add CORS and return
-  return addCorsHeaders(newResponse, request.headers.get("origin"));
+  if (responseData.data?.login?.user || responseData.data?.register?.user) {
+    const user =
+      responseData.data?.login?.user || responseData.data?.register?.user;
+    if (user) {
+      const { createSession, createSessionCookie } = await import(
+        "@/lib/session"
+      );
+      const sessionToken = await createSession({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      });
+      cookieHeader = createSessionCookie(sessionToken);
+    }
+  } else if (responseData.data?.logout) {
+    const { clearSessionCookie } = await import("@/lib/session");
+    cookieHeader = clearSessionCookie();
+  }
+
+  // Set cookie header if we have one
+  if (cookieHeader) {
+    headers.set("Set-Cookie", cookieHeader);
+  }
+
+  // Return new response with all headers
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
