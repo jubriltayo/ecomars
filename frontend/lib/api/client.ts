@@ -1,4 +1,5 @@
-const BACKEND_URL = ""
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
 export interface GraphQLResponse<T = any> {
   data?: T;
@@ -17,17 +18,20 @@ export async function graphqlRequest<T = any>(
   variables?: Record<string, any>,
   options?: {
     headers?: Record<string, string>;
-    credentials?: RequestCredentials;
   }
 ): Promise<GraphQLResponse<T>> {
   try {
+    // Get token from localStorage
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
     const response = await fetch(`${BACKEND_URL}/api/graphql`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options?.headers,
       },
-      credentials: options?.credentials || "include",
       body: JSON.stringify({
         query,
         variables,

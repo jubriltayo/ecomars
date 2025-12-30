@@ -29,7 +29,7 @@ export function SiteHeader() {
               <div className="p-2 bg-linear-primary rounded-lg">
                 <Rocket className="h-6 w-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-gradient-primary hidden sm:inline-block">
+              <span className="text-2xl font-bold text-gradient-primary">
                 Ecomars
               </span>
             </Link>

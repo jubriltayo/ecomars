@@ -95,8 +95,8 @@ function FeatureCard({
   };
 
   return (
-    <div className="p-6 rounded-2xl bg-linear-card border feature-card">
-      <div className={`feature-icon ${variantClasses[variant]} mb-4`}>
+    <div className="p-6 rounded-2xl bg-linear-card border feature-card text-center">
+      <div className={`feature-icon ${variantClasses[variant]} mb-4 mx-auto`}>
         <Icon className="h-6 w-6" />
       </div>
       <h3 className="text-xl font-bold mb-2">{title}</h3>

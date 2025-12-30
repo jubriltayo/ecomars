@@ -27,6 +27,7 @@ export const authTypeDefs = gql`
 
   type AuthPayload {
     user: User!
+    token: String!
     success: Boolean!
   }
 

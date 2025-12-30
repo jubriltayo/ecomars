@@ -23,6 +23,7 @@ export const AUTH_MUTATIONS = {
           image
           role
         }
+        token
         success
       }
     }
@@ -38,6 +39,7 @@ export const AUTH_MUTATIONS = {
           image
           role
         }
+        token
         success
       }
     }

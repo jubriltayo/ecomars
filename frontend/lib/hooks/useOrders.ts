@@ -89,10 +89,47 @@ export function useOrders() {
           throw new Error(errors?.[0]?.message || "Download failed");
         }
 
+        const downloadPath = data.downloadProduct.downloadUrl;
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-        return `${backendUrl}${data.downloadProduct.downloadUrl}`;
+        const downloadApiUrl = `${backendUrl}${downloadPath}`;
+
+        // Call the REST API with Authorization header
+        const token = localStorage.getItem("auth_token");
+        console.log("Token exists:", !!token);
+
+        if (!token) {
+          toast.error("Please login to download");
+          throw new Error("Not authenticated");
+        }
+
+        const response = await fetch(downloadApiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log("REST API error response:", errorText);
+          if (response.status === 401) {
+            toast.error("Session expired. Please login again.");
+            throw new Error("Session expired");
+          }
+          if (response.status === 403) {
+            toast.error("You don't have permission to download this product.");
+            throw new Error("No permission");
+          }
+          throw new Error("Download failed");
+        }
+
+        // Get the Cloudinary URL from the redirect
+        const cloudinaryUrl = response.url;
+
+        return cloudinaryUrl;
       } catch (err: any) {
+        console.error("Download error details:", err);
+        console.error("Error stack:", err.stack);
         toast.error(err.message || "Failed to download");
         throw err;
       }

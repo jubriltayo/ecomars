@@ -11,17 +11,71 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handleOAuthRedirect = () => {
+      // Check URL params for token (from Google OAuth)
+      const params = new URLSearchParams(window.location.search);
+      let token = params.get("token");
+      let loginSuccess = params.get("login");
+
+      // Also check hash (more secure)
+      if (!token) {
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        token = hashParams.get("token");
+        loginSuccess = hashParams.get("login");
+      }
+
+      if (token && loginSuccess === "success") {
+        localStorage.setItem("auth_token", token);
+
+        // Clear the token from URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+
+        toast.success("Logged in successfully!");
+
+        // Trigger a refetch
+        return true;
+      }
+      return false;
+    };
+
+    const hasToken = handleOAuthRedirect();
+    if (hasToken) {
+      fetchCurrentUser();
+    }
+  }, []);
+
   const fetchCurrentUser = useCallback(async () => {
     try {
+      // Check if token exists
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
-      const { data } = await graphqlRequest<{ me: User }>(AUTH_QUERIES.GET_ME);
+      const { data, errors } = await graphqlRequest<{ me: User }>(
+        AUTH_QUERIES.GET_ME
+      );
+
+      if (errors) {
+        throw new Error(errors[0]?.message || "Failed to fetch user");
+      }
 
       setUser(data?.me || null);
     } catch (err: any) {
+      console.error("Error fetching user:", err.message);
       setError(err.message || "Failed to fetch user");
       setUser(null);
+      // Clear invalid token
+      localStorage.removeItem("auth_token");
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +91,7 @@ export function useAuth() {
       setError(null);
 
       const { data, errors } = await graphqlRequest<{
-        login: { user: User; success: boolean };
+        login: { user: User; token: string; success: boolean };
       }>(AUTH_MUTATIONS.LOGIN, {
         input: { email, password },
       });
@@ -45,6 +99,8 @@ export function useAuth() {
       if (errors || !data?.login.success) {
         throw new Error(errors?.[0]?.message || "Login failed");
       }
+
+      localStorage.setItem("auth_token", data.login.token);
 
       setUser(data.login.user);
       toast.success("Logged in successfully!");
@@ -65,7 +121,7 @@ export function useAuth() {
         setError(null);
 
         const { data, errors } = await graphqlRequest<{
-          register: { user: User; success: boolean };
+          register: { user: User; token: string; success: boolean };
         }>(AUTH_MUTATIONS.REGISTER, {
           input: { name, email, password },
         });
@@ -73,6 +129,8 @@ export function useAuth() {
         if (errors || !data?.register.success) {
           throw new Error(errors?.[0]?.message || "Registration failed");
         }
+
+        localStorage.setItem("auth_token", data.register.token);
 
         setUser(data.register.user);
         toast.success("Account created successfully!");
@@ -94,11 +152,15 @@ export function useAuth() {
 
       await graphqlRequest(AUTH_MUTATIONS.LOGOUT);
 
+      // Clear token from localStorage
+      localStorage.removeItem("auth_token");
+
       setUser(null);
       toast.success("Logged out successfully!");
     } catch (err: any) {
       console.error("Logout error:", err);
-      // Still clear user even if API call fails
+      // Still clear token even if API call fails
+      localStorage.removeItem("auth_token");
       setUser(null);
     } finally {
       setIsLoading(false);

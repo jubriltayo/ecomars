@@ -3,6 +3,7 @@ import { GraphQLContext } from "@/types/context";
 import { Users_Insert_Input } from "@/types/hasura";
 import bcrypt from "bcryptjs";
 import { RegisterSchema } from "@/lib/validation";
+import { createSession } from "@/lib/session";
 
 export const authResolvers = {
   Query: {
@@ -30,7 +31,6 @@ export const authResolvers = {
       { input }: { input: { email: string; name: string; password: string } }
     ) => {
       try {
-        // Validate input with Zod
         const validation = RegisterSchema.safeParse(input);
         if (!validation.success) {
           const errorMessage =
@@ -40,7 +40,6 @@ export const authResolvers = {
 
         const validatedInput = validation.data;
 
-        // Check if user exists
         const existingUser = await hasuraClient.getUserByEmail(
           validatedInput.email
         );
@@ -49,10 +48,8 @@ export const authResolvers = {
           throw new Error("User already exists");
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(input.password, 12);
 
-        // Create user
         const userInput: Users_Insert_Input = {
           email: input.email,
           name: input.name,
@@ -62,8 +59,14 @@ export const authResolvers = {
         };
 
         const data = await hasuraClient.createUser(userInput);
-
         const user = data.insert_users_one;
+
+        // Create JWT token
+        const token = await createSession({
+          userId: user.id,
+          email: user.email,
+          name: user.name || user.email,
+        });
 
         return {
           user: {
@@ -75,6 +78,7 @@ export const authResolvers = {
             createdAt: user.created_at,
             updatedAt: user.updated_at,
           },
+          token,
           success: true,
         };
       } catch (error) {
@@ -87,13 +91,11 @@ export const authResolvers = {
 
     login: async (
       _: unknown,
-      { input }: { input: { email: string; password: string } },
-      context: GraphQLContext
+      { input }: { input: { email: string; password: string } }
     ) => {
       try {
         const { email, password } = input;
 
-        // Get user with password
         const data = await hasuraClient.getUserByEmail(email);
 
         if (data.users.length === 0) {
@@ -102,7 +104,6 @@ export const authResolvers = {
 
         const user = data.users[0];
 
-        // Verify password
         if (!user.password) {
           throw new Error("Invalid email or password");
         }
@@ -112,7 +113,13 @@ export const authResolvers = {
           throw new Error("Invalid email or password");
         }
 
-        // Set user in context (session handling to be done in GraphQL route)
+        // Create JWT token
+        const token = await createSession({
+          userId: user.id,
+          email: user.email,
+          name: user.name || user.email,
+        });
+
         return {
           user: {
             id: user.id,
@@ -123,6 +130,7 @@ export const authResolvers = {
             createdAt: user.created_at,
             updatedAt: user.updated_at,
           },
+          token,
           success: true,
         };
       } catch (error) {
@@ -133,8 +141,7 @@ export const authResolvers = {
       }
     },
 
-    logout: async (_: unknown, __: unknown, context: GraphQLContext) => {
-      // Session will be cleared in the GraphQL route
+    logout: async () => {
       return { success: true };
     },
   },
