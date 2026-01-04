@@ -4,7 +4,7 @@
 
 Ecomars is a modern, full-stack digital marketplace platform similar to Gumroad, built with Next.js 15. It enables creators to sell digital products and customers to purchase them with secure payments, instant downloads, and comprehensive management tools.
 
-**Live Demo**: [Coming Soon]  
+**Live Demo**: [View Live Application](https://ecomars-alh5.vercel.app/)
 **Repository**: `https://github.com/jubriltayo/ecomars`
 
 ## ✨ Features
@@ -290,13 +290,10 @@ Access at: `http://localhost:4000/api/graphql`
 
 ## 🔒 Security Considerations
 
-1. **File Uploads**: Validate file types and sizes
-2. **Downloads**: Authenticate and authorize each download
-3. **Payments**: Use Stripe for PCI compliance
-4. **Sessions**: Secure, HTTP-only cookies
+1. **Authentication**: JWT tokens with Authorization headers
+2. **File Uploads**: Validate file types and sizes
+3. **Downloads**: Authenticate and authorize each download
+4. **Payments**: Use Stripe for PCI compliance
+5. **Tokens**: Secure JWT Tokens with localStorage storage
 5. **CORS**: Restrict to trusted origins
 6. **Input Validation**: Validate all user input with Zod
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
